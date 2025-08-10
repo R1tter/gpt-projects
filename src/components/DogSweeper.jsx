@@ -1,97 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-// DogSweeper — Minesweeper temático de cachorros 🐶💩
-// Correção: garantir que as minas sejam colocadas ANTES de revelar a primeira célula
-// e que a mesma "board" (com minas) seja usada durante o clique.
-
-const randInt = (max) => Math.floor(Math.random() * max);
-const keyOf = (r, c) => `${r}:${c}`;
-
-const levelPresets = {
-  Fácil: { rows: 9, cols: 9, mines: 10 },
-  Médio: { rows: 12, cols: 12, mines: 22 },
-  Difícil: { rows: 16, cols: 16, mines: 40 },
-};
-
-const numberColors = {
-  1: "text-sky-600",
-  2: "text-emerald-600",
-  3: "text-rose-600",
-  4: "text-indigo-700",
-  5: "text-amber-700",
-  6: "text-teal-700",
-  7: "text-fuchsia-700",
-  8: "text-stone-700",
-};
-
-const loseLines = [
-  "Ih… pisou no presente! 💩",
-  "Game over: quem ama, limpa. 🧻",
-  "Ops! O doguinho aprontou e você também.",
-  "Escorregou no cocô-móvel!",
-];
-
-const winLines = [
-  "Uau! 🐶 Você domou o quarteirão!",
-  "Campeão do passeio sem pisão! 🏆",
-  "Cheiro de vitória (e não é do cocô)!",
-  "Zero pisadas, 100% pet-friendly!",
-];
-
-const sidebarQuips = [
-  "Dica: marque com 🦴 onde suspeitar.",
-  "Rumor: o labrador enterrou dois cocôs juntos…",
-  "Conta as patinhas: números = quantos 💩 ao redor!",
-  "Modo Mobile: ative \"Marcar\" para usar 🦴.",
-];
-
-function makeEmptyBoard(rows, cols) {
-  return Array.from({ length: rows }, () =>
-    Array.from({ length: cols }, () => ({
-      revealed: false,
-      hasMine: false,
-      flagged: false,
-      adjacent: 0,
-    }))
-  );
-}
-
-function inBounds(rows, cols, r, c) {
-  return r >= 0 && r < rows && c >= 0 && c < cols;
-}
-
-function neighbors(rows, cols, r, c) {
-  const out = [];
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      const nr = r + dr, nc = c + dc;
-      if (inBounds(rows, cols, nr, nc)) out.push([nr, nc]);
-    }
-  }
-  return out;
-}
-
-function placeMines(board, rows, cols, mines, safeR, safeC) {
-  const forbidden = new Set([keyOf(safeR, safeC), ...neighbors(rows, cols, safeR, safeC).map(([r, c]) => keyOf(r, c))]);
-  let placed = 0;
-  while (placed < mines) {
-    const r = randInt(rows);
-    const c = randInt(cols);
-    const k = keyOf(r, c);
-    if (!forbidden.has(k) && !board[r][c].hasMine) {
-      board[r][c].hasMine = true;
-      placed++;
-    }
-  }
-  // Calcula adjacentes
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (board[r][c].hasMine) continue;
-      board[r][c].adjacent = neighbors(rows, cols, r, c).filter(([nr, nc]) => board[nr][nc].hasMine).length;
-    }
-  }
-}
+import {
+  levelPresets,
+  numberColors,
+  loseLines,
+  winLines,
+  sidebarQuips,
+} from "../constants";
+import {
+  randInt,
+  keyOf,
+  makeEmptyBoard,
+  neighbors,
+  placeMines,
+} from "../utils/board";
 
 export default function DogSweeper() {
   const [level, setLevel] = useState("Médio");
@@ -105,7 +26,7 @@ export default function DogSweeper() {
   }));
 
   const [started, setStarted] = useState(false);
-  const [state, setState] = useState("ready"); // ready | playing | won | lost
+  const [state, setState] = useState("ready");
   const [flags, setFlags] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [markMode, setMarkMode] = useState(false);
@@ -152,7 +73,6 @@ export default function DogSweeper() {
     }
   }, [rows, cols]);
 
-  // 👇 Função que garante board com minas ANTES de qualquer ação de revelar
   const prepareBoardForClick = useCallback((r, c) => {
     let working = board.map((row) => row.map((cell) => ({ ...cell })));
     if (!started) {
@@ -166,7 +86,6 @@ export default function DogSweeper() {
   const handleReveal = useCallback((r, c) => {
     if (state === "won" || state === "lost") return;
 
-    // usa sempre a mesma cópia durante o clique
     const working = prepareBoardForClick(r, c);
     const cell = working[r][c];
     if (cell.revealed || cell.flagged) {
@@ -177,7 +96,6 @@ export default function DogSweeper() {
     cell.revealed = true;
 
     if (cell.hasMine) {
-      // revelar tudo ao perder
       for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) working[i][j].revealed = true;
       setBoardState({ board: working, mines, rows, cols });
       setState("lost");
@@ -186,7 +104,6 @@ export default function DogSweeper() {
 
     if (cell.adjacent === 0) revealFlood(r, c, working);
 
-    // Atualiza tabuleiro e verifica vitória
     setBoardState({ board: working, mines, rows, cols });
 
     let safeRevealed = 0;
