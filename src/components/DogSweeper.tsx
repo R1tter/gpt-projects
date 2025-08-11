@@ -13,12 +13,20 @@ import {
   neighbors,
   placeMines,
 } from "../utils/board";
+import type { Board, GameState, Level } from "../types";
 
 export default function DogSweeper() {
-  const [level, setLevel] = useState("Médio");
+  const [level, setLevel] = useState<Level>("Médio");
   const settings = levelPresets[level];
 
-  const [{ board, mines, rows, cols }, setBoardState] = useState(() => ({
+  interface BoardState {
+    board: Board;
+    mines: number;
+    rows: number;
+    cols: number;
+  }
+
+  const [{ board, mines, rows, cols }, setBoardState] = useState<BoardState>(() => ({
     board: makeEmptyBoard(settings.rows, settings.cols),
     mines: settings.mines,
     rows: settings.rows,
@@ -26,11 +34,11 @@ export default function DogSweeper() {
   }));
 
   const [started, setStarted] = useState(false);
-  const [state, setState] = useState("ready");
+  const [state, setState] = useState<GameState>("ready");
   const [flags, setFlags] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [markMode, setMarkMode] = useState(false);
-  const timerRef = useRef(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const reset = useCallback(() => {
     const s = levelPresets[level];
@@ -46,18 +54,20 @@ export default function DogSweeper() {
   useEffect(() => {
     if (state === "playing") {
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-      return () => clearInterval(timerRef.current);
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
     }
-    clearInterval(timerRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
   }, [state]);
 
   const nonMineCount = useMemo(() => rows * cols - mines, [rows, cols, mines]);
 
-  const revealFlood = useCallback((r, c, b) => {
-    const stack = [[r, c]];
-    const visited = new Set();
+  const revealFlood = useCallback((r: number, c: number, b: Board) => {
+    const stack: [number, number][] = [[r, c]];
+    const visited = new Set<string>();
     while (stack.length) {
-      const [cr, cc] = stack.pop();
+      const [cr, cc] = stack.pop()!;
       const k = keyOf(cr, cc);
       if (visited.has(k)) continue;
       visited.add(k);
@@ -73,17 +83,20 @@ export default function DogSweeper() {
     }
   }, [rows, cols]);
 
-  const prepareBoardForClick = useCallback((r, c) => {
-    let working = board.map((row) => row.map((cell) => ({ ...cell })));
-    if (!started) {
-      placeMines(working, rows, cols, mines, r, c);
-      setStarted(true);
-      setState("playing");
-    }
-    return working;
-  }, [board, started, rows, cols, mines]);
+  const prepareBoardForClick = useCallback(
+    (r: number, c: number): Board => {
+      let working: Board = board.map((row) => row.map((cell) => ({ ...cell })));
+      if (!started) {
+        placeMines(working, rows, cols, mines, r, c);
+        setStarted(true);
+        setState("playing");
+      }
+      return working;
+    },
+    [board, started, rows, cols, mines]
+  );
 
-  const handleReveal = useCallback((r, c) => {
+  const handleReveal = useCallback((r: number, c: number) => {
     if (state === "won" || state === "lost") return;
 
     const working = prepareBoardForClick(r, c);
@@ -107,13 +120,15 @@ export default function DogSweeper() {
     setBoardState({ board: working, mines, rows, cols });
 
     let safeRevealed = 0;
-    for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) if (working[i][j].revealed && !working[i][j].hasMine) safeRevealed++;
+    for (let i = 0; i < rows; i++)
+      for (let j = 0; j < cols; j++)
+        if (working[i][j].revealed && !working[i][j].hasMine) safeRevealed++;
     if (safeRevealed >= nonMineCount) setState("won");
   }, [state, rows, cols, mines, nonMineCount, revealFlood, prepareBoardForClick]);
 
-  const handleFlag = useCallback((r, c) => {
+  const handleFlag = useCallback((r: number, c: number) => {
     if (state === "won" || state === "lost") return;
-    let working = board.map((row) => row.map((cell) => ({ ...cell })));
+    let working: Board = board.map((row) => row.map((cell) => ({ ...cell })));
     const cell = working[r][c];
     if (cell.revealed) return;
     if (!started) setState("playing");
@@ -130,7 +145,10 @@ export default function DogSweeper() {
     return "Passeio canino: evite os 💩!";
   }, [state]);
 
-  const quip = useMemo(() => sidebarQuips[randInt(sidebarQuips.length)], [state, seconds, flags]);
+  const quip = useMemo(
+    () => sidebarQuips[randInt(sidebarQuips.length)],
+    [state, seconds, flags]
+  );
 
   return (
     <div className="min-h-screen w-full bg-amber-50 text-stone-800 flex items-center justify-center p-4">
@@ -142,8 +160,14 @@ export default function DogSweeper() {
               <h1 className="text-2xl md:text-3xl font-black tracking-tight">DogSweeper</h1>
             </div>
             <div className="flex items-center gap-2">
-              <select className="rounded-2xl px-3 py-2 bg-white shadow ring-1 ring-stone-200 text-sm" value={level} onChange={(e) => setLevel(e.target.value)}>
-                {Object.keys(levelPresets).map((k) => (<option key={k}>{k}</option>))}
+              <select
+                className="rounded-2xl px-3 py-2 bg-white shadow ring-1 ring-stone-200 text-sm"
+                value={level}
+                onChange={(e) => setLevel(e.target.value as Level)}
+              >
+                {(Object.keys(levelPresets) as Level[]).map((k) => (
+                  <option key={k}>{k}</option>
+                ))}
               </select>
               <button onClick={reset} className="rounded-2xl px-4 py-2 bg-rose-500 text-white shadow hover:brightness-105 active:brightness-95">Reiniciar</button>
             </div>
@@ -155,7 +179,14 @@ export default function DogSweeper() {
               <div className="rounded-xl bg-sky-100 px-3 py-2 text-sm font-semibold">⏱️ {seconds}s</div>
             </div>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="accent-rose-500 w-4 h-4" checked={markMode} onChange={(e) => setMarkMode(e.target.checked)} />
+              <input
+                type="checkbox"
+                className="accent-rose-500 w-4 h-4"
+                checked={markMode}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setMarkMode(e.target.checked)
+                }
+              />
               Modo "Marcar" (mobile)
             </label>
           </div>
