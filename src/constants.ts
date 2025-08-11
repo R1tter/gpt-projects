@@ -1,10 +1,12 @@
-export const levelPresets = {
+import type { Level, LevelPreset } from "./types";
+
+export const levelPresets: Record<Level, LevelPreset> = {
   "Fácil": { rows: 9, cols: 9, mines: 10 },
   "Médio": { rows: 12, cols: 12, mines: 22 },
   "Difícil": { rows: 16, cols: 16, mines: 40 },
 };
 
-export const numberColors = {
+export const numberColors: Record<number, string> = {
   1: "text-sky-600",
   2: "text-emerald-600",
   3: "text-rose-600",
@@ -15,21 +17,21 @@ export const numberColors = {
   8: "text-stone-700",
 };
 
-export const loseLines = [
+export const loseLines: string[] = [
   "Ih… pisou no presente! 💩",
   "Game over: quem ama, limpa. 🧻",
   "Ops! O doguinho aprontou e você também.",
   "Escorregou no cocô-móvel!",
 ];
 
-export const winLines = [
+export const winLines: string[] = [
   "Uau! 🐶 Você domou o quarteirão!",
   "Campeão do passeio sem pisão! 🏆",
   "Cheiro de vitória (e não é do cocô)!",
   "Zero pisadas, 100% pet-friendly!",
 ];
 
-export const sidebarQuips = [
+export const sidebarQuips: string[] = [
   "Dica: marque com 🦴 onde suspeitar.",
   "Rumor: o labrador enterrou dois cocôs juntos…",
   "Conta as patinhas: números = quantos 💩 ao redor!",

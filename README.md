@@ -14,15 +14,15 @@ index.html
 package.json
 postcss.config.js
 tailwind.config.js
-vite.config.js
-src/
-  constants.js
-  index.css
-  main.jsx
-  components/
-    DogSweeper.jsx
-  utils/
-    board.js
+  vite.config.ts
+  src/
+    constants.ts
+    index.css
+    main.tsx
+    components/
+      DogSweeper.tsx
+    utils/
+      board.ts
 ```
 
 ## Como Rodar o Projeto
