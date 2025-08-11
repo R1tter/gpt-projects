@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --color-bg: #FFFBEB;
+  --color-board: #FDE68A;
+  --color-cell: #FEF3C7;
+  --color-hover: #FDE68A;
+  --color-ring: #FCD34D;
+}

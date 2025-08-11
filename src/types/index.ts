@@ -6,6 +6,14 @@ export interface LevelPreset {
 
 export type Level = 'F\u00e1cil' | 'M\u00e9dio' | 'Dif\u00edcil';
 
+export interface LevelTheme {
+  bg: string;
+  board: string;
+  cell: string;
+  hover: string;
+  ring: string;
+}
+
 export interface Cell {
   revealed: boolean;
   hasMine: boolean;

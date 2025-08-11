@@ -5,6 +5,7 @@ import {
   loseLines,
   winLines,
   sidebarQuips,
+  levelThemes,
 } from "../constants";
 import {
   randInt,
@@ -13,7 +14,7 @@ import {
   placeMines,
   revealFlood,
 } from "../utils/board";
-import type { Board, GameState, Level } from "../types";
+import type { Board, GameState, Level, LevelTheme } from "../types";
 
 export default function DogSweeper() {
   const [level, setLevel] = useState<Level>("Médio");
@@ -33,12 +34,28 @@ export default function DogSweeper() {
     cols: settings.cols,
   }));
 
+  const [theme, setTheme] = useState<LevelTheme>(() => {
+    const options = levelThemes[level];
+    return options[randInt(options.length)];
+  });
+
   const [started, setStarted] = useState(false);
   const [state, setState] = useState<GameState>("ready");
   const [flags, setFlags] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [markMode, setMarkMode] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const themeStyle = useMemo(
+    () => ({
+      "--color-bg": theme.bg,
+      "--color-board": theme.board,
+      "--color-cell": theme.cell,
+      "--color-hover": theme.hover,
+      "--color-ring": theme.ring,
+    }) as React.CSSProperties,
+    [theme]
+  );
 
   const reset = useCallback(() => {
     const s = levelPresets[level];
@@ -50,6 +67,11 @@ export default function DogSweeper() {
   }, [level]);
 
   useEffect(() => { reset(); }, [level]);
+
+  useEffect(() => {
+    const options = levelThemes[level];
+    setTheme(options[randInt(options.length)]);
+  }, [level]);
 
   useEffect(() => {
     if (state === "playing") {
@@ -133,7 +155,7 @@ export default function DogSweeper() {
   );
 
   return (
-    <div className="min-h-screen w-full bg-amber-50 text-stone-800 flex items-center justify-center p-4">
+    <div className="min-h-screen w-full text-stone-800 flex items-center justify-center p-4 bg-[var(--color-bg)]" style={themeStyle}>
       <div className="w-full max-w-5xl grid md:grid-cols-[1fr_280px] gap-6">
         <div>
           <header className="flex items-center justify-between gap-3 mb-4">
@@ -173,12 +195,12 @@ export default function DogSweeper() {
             </label>
           </div>
 
-          <div className="relative mx-auto select-none">
-            <div className="grid mx-auto bg-amber-200/60 p-2 rounded-3xl shadow-inner" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 6 }}>
+          <div className="relative mx-auto select-none w-full max-w-[calc(100vw-2rem)] md:max-w-none">
+            <div className="grid mx-auto p-2 rounded-3xl shadow-inner w-full bg-[var(--color-board)]" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 6 }}>
               {board.map((row, r) =>
                 row.map((cell, c) => {
                   const base = "aspect-square rounded-2xl flex items-center justify-center font-bold shadow-sm transition-all duration-100";
-                  const unrevealed = "bg-amber-100 hover:bg-amber-200 active:translate-y-[1px] ring-1 ring-amber-300/60";
+                  const unrevealed = "bg-[var(--color-cell)] hover:bg-[var(--color-hover)] active:translate-y-[1px] ring-1 ring-[var(--color-ring)] ring-opacity-60";
                   const revealed = "bg-white ring-1 ring-stone-200";
                   const content = cell.revealed ? (cell.hasMine ? "💩" : cell.adjacent > 0 ? cell.adjacent : "") : cell.flagged ? "🦴" : "";
                   const numClass = numberColors[cell.adjacent] || "";
@@ -215,7 +237,7 @@ export default function DogSweeper() {
           </div>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 mt-6 md:mt-0">
           <div className="bg-white rounded-2xl p-4 ring-1 ring-stone-200 shadow-sm">
             <h3 className="font-extrabold text-lg mb-2 flex items-center gap-2">🐾 Dicas do Passeio</h3>
             <ul className="text-sm space-y-2 list-disc pl-5">
