@@ -62,3 +62,29 @@ export function placeMines(
     }
   }
 }
+
+export function revealFlood(
+  board: Board,
+  rows: number,
+  cols: number,
+  r: number,
+  c: number
+): void {
+  const stack: [number, number][] = [[r, c]];
+  const visited = new Set<string>();
+  while (stack.length) {
+    const [cr, cc] = stack.pop()!;
+    const key = keyOf(cr, cc);
+    if (visited.has(key)) continue;
+    visited.add(key);
+    const cell = board[cr][cc];
+    if (cell.revealed || cell.flagged) continue;
+    cell.revealed = true;
+    if (!cell.hasMine && cell.adjacent === 0) {
+      for (const [nr, nc] of neighbors(rows, cols, cr, cc)) {
+        const nk = keyOf(nr, nc);
+        if (!visited.has(nk)) stack.push([nr, nc]);
+      }
+    }
+  }
+}

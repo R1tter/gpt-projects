@@ -10,8 +10,8 @@ import {
   randInt,
   keyOf,
   makeEmptyBoard,
-  neighbors,
   placeMines,
+  revealFlood,
 } from "../utils/board";
 import type { Board, GameState, Level } from "../types";
 
@@ -63,26 +63,6 @@ export default function DogSweeper() {
 
   const nonMineCount = useMemo(() => rows * cols - mines, [rows, cols, mines]);
 
-  const revealFlood = useCallback((r: number, c: number, b: Board) => {
-    const stack: [number, number][] = [[r, c]];
-    const visited = new Set<string>();
-    while (stack.length) {
-      const [cr, cc] = stack.pop()!;
-      const k = keyOf(cr, cc);
-      if (visited.has(k)) continue;
-      visited.add(k);
-      const cell = b[cr][cc];
-      if (cell.revealed || cell.flagged) continue;
-      cell.revealed = true;
-      if (!cell.hasMine && cell.adjacent === 0) {
-        for (const [nr, nc] of neighbors(rows, cols, cr, cc)) {
-          const nk = keyOf(nr, nc);
-          if (!visited.has(nk)) stack.push([nr, nc]);
-        }
-      }
-    }
-  }, [rows, cols]);
-
   const prepareBoardForClick = useCallback(
     (r: number, c: number): Board => {
       let working: Board = board.map((row) => row.map((cell) => ({ ...cell })));
@@ -106,8 +86,6 @@ export default function DogSweeper() {
       return;
     }
 
-    cell.revealed = true;
-
     if (cell.hasMine) {
       for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) working[i][j].revealed = true;
       setBoardState({ board: working, mines, rows, cols });
@@ -115,7 +93,11 @@ export default function DogSweeper() {
       return;
     }
 
-    if (cell.adjacent === 0) revealFlood(r, c, working);
+    if (cell.adjacent === 0) {
+      revealFlood(working, rows, cols, r, c);
+    } else {
+      cell.revealed = true;
+    }
 
     setBoardState({ board: working, mines, rows, cols });
 
@@ -124,7 +106,7 @@ export default function DogSweeper() {
       for (let j = 0; j < cols; j++)
         if (working[i][j].revealed && !working[i][j].hasMine) safeRevealed++;
     if (safeRevealed >= nonMineCount) setState("won");
-  }, [state, rows, cols, mines, nonMineCount, revealFlood, prepareBoardForClick]);
+  }, [state, rows, cols, mines, nonMineCount, prepareBoardForClick]);
 
   const handleFlag = useCallback((r: number, c: number) => {
     if (state === "won" || state === "lost") return;
